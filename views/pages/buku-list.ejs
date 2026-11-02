@@ -1,0 +1,63 @@
+<%- include('../partials/header', { pageTitle: pageTitle }) %>
+<%
+  const pesan = {
+    created: ['ok', 'Buku baru berhasil ditambahkan.'],
+    updated: ['ok', 'Data buku berhasil diperbarui.'],
+    deleted: ['ok', 'Data buku berhasil dihapus.'],
+    notfound: ['warn', 'Data yang akan dihapus tidak ditemukan.']
+  };
+%>
+<div class="card">
+  <div class="toolbar">
+    <h2>Master Data Buku Perpustakaan</h2>
+    <a href="/buku/tambah" class="btn">+ Tambah Buku</a>
+  </div>
+
+  <% if (status && pesan[status]) { %>
+    <div class="alert alert--<%= pesan[status][0] %>"><%= pesan[status][1] %></div>
+  <% } %>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Judul</th>
+          <th>Penulis</th>
+          <th>Kategori</th>
+          <th class="num">Stok</th>
+          <th class="num">Harga</th>
+          <th>Tanggal Masuk</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (bukuList.length === 0) { %>
+          <tr><td colspan="8" class="center">Belum ada data buku.</td></tr>
+        <% } else { %>
+          <% bukuList.forEach(item => { %>
+            <tr>
+              <td><%= item.id %></td>
+              <td>
+                <strong><%= item.judul %></strong>
+                <% if (item.sinopsis) { %><br><small><%= item.sinopsis %></small><% } %>
+              </td>
+              <td><%= item.penulis %></td>
+              <td><%= item.kategori %></td>
+              <td class="num"><%= item.stok %> eksemplar</td>
+              <td class="num"><%= formatRupiah(item.harga) %></td>
+              <td><%= formatTanggal(item.tanggal_masuk) %></td>
+              <td class="aksi">
+                <a href="/buku/edit/<%= item.id %>">Edit</a>
+                <form action="/buku/hapus/<%= item.id %>" method="POST" onsubmit="return confirm('Yakin ingin menghapus buku ini?');">
+                  <button type="submit" class="link-danger">Hapus</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<%- include('../partials/footer') %>

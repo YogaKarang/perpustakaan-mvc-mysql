@@ -1,0 +1,50 @@
+<%- include('../partials/header', { pageTitle: pageTitle }) %>
+<% const isEdit = mode === 'edit'; const b = buku || {}; %>
+<div class="card form-card">
+  <h2><%= isEdit ? 'Edit Buku #' + b.id : 'Formulir Buku Baru' %></h2>
+
+  <% if (errors && errors.length) { %>
+    <div class="alert alert--err">
+      <ul><% errors.forEach(e => { %><li><%= e %></li><% }) %></ul>
+    </div>
+  <% } %>
+
+  <form action="<%= isEdit ? '/buku/edit/' + b.id : '/buku/tambah' %>" method="POST">
+    <label for="judul">Judul Buku</label>
+    <input type="text" id="judul" name="judul" maxlength="150" required value="<%= b.judul || '' %>">
+
+    <label for="penulis">Penulis</label>
+    <input type="text" id="penulis" name="penulis" maxlength="100" required value="<%= b.penulis || '' %>">
+
+    <label for="sinopsis">Sinopsis (opsional)</label>
+    <textarea id="sinopsis" name="sinopsis" rows="4"><%= b.sinopsis || '' %></textarea>
+
+    <label for="kategori">Kategori</label>
+    <select id="kategori" name="kategori" required>
+      <option value="">-- Pilih Kategori --</option>
+      <% kategoriList.forEach(k => { %>
+        <option value="<%= k %>" <%= b.kategori === k ? 'selected' : '' %>><%= k %></option>
+      <% }) %>
+    </select>
+
+    <div class="row">
+      <div>
+        <label for="stok">Stok (eksemplar)</label>
+        <input type="number" id="stok" name="stok" min="0" step="1" required value="<%= b.stok ?? '' %>">
+      </div>
+      <div>
+        <label for="harga">Harga (Rp)</label>
+        <input type="number" id="harga" name="harga" min="0" step="any" required value="<%= b.harga ?? '' %>">
+      </div>
+    </div>
+
+    <label for="tanggal_masuk">Tanggal Masuk</label>
+    <input type="date" id="tanggal_masuk" name="tanggal_masuk" required value="<%= (b.tanggal_masuk || '').toString().slice(0, 10) %>">
+
+    <div class="actions">
+      <button type="submit" class="btn"><%= isEdit ? 'Perbarui Perubahan' : 'Simpan ke Basis Data' %></button>
+      <a href="/buku" class="cancel">Batal</a>
+    </div>
+  </form>
+</div>
+<%- include('../partials/footer') %>
