@@ -1,185 +1,126 @@
-# Sistem Manajemen Master Data Buku Perpustakaan
+# Tugas 3 - Master Data Buku Perpustakaan (Express + MySQL)
 
-Tugas 3 Terstruktur (Kasus Mandiri Non-Cookbook) — Pemrograman Web (MK11), Pertemuan 6/7.
-Aplikasi CRUD berbasis **Node.js + Express + EJS + MySQL** dengan *connection pool*, *prepared statements* pada seluruh query, dan arsitektur MVC yang ketat.
+- **Mata Kuliah:** Pemrograman Web (MK11)
+- **Tugas:** Tugas 3 Terstruktur (Kasus Mandiri Non-Cookbook) - Sistem Manajemen Master Entitas Terintegrasi MySQL dan Prepared Statements
+- **Nama:** I Wayan Yoga Karang Saputra
+- **NIM:** 42530013
+- **Kelas:** Pagi - Teknologi Informasi
 
-- **Nama:** `I Wayan Yoga Karang Saputra`
-- **NIM:** `42530013`
-- **Kelas:** `Pagi / Teknologi Informasi`
+Aplikasi web monolith (Server-Side Rendering) berbasis **Node.js, Express, dan EJS** yang terhubung ke **MySQL** lewat **connection pool** (`mysql2/promise`). Domain sistem adalah **master data buku perpustakaan** dengan operasi CRUD penuh.
 
----
+## Fitur
 
-## 1. Fitur Utama
+- **MVC ketat:** seluruh query SQL hanya berada di `models/`, controller mengatur alur data, dan view EJS hanya menampilkan antarmuka.
+- **Koneksi terisolasi:** kredensial database (`DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`, `DB_PORT`) disimpan di `.env`, dan contohnya tersedia di `.env.example`.
+- **CRUD fungsional:**
+  - Daftar data tabular dengan format harga (Rupiah) dan tanggal (Indonesia) yang rapi.
+  - Formulir tambah data dengan metode POST dan pola **Post-Redirect-Get (PRG)**.
+  - Edit data lewat rute dinamis `/buku/edit/:id` dengan formulir yang terisi data awal (pre-filled).
+  - Hapus data dengan konfirmasi dialog di sisi klien.
+- **100% prepared statement:** seluruh query `INSERT`, `SELECT ... WHERE`, `UPDATE`, dan `DELETE` memakai placeholder `?` melalui `db.execute()`, tanpa template literal atau penggabungan string pada SQL.
+- Validasi sisi server, halaman 404 untuk data yang tidak ditemukan, dan pesan status setelah redirect.
 
-- Daftar buku dalam tabel dengan format harga (`Rp 250.000`) dan tanggal (`20 Juni 2025`) yang rapi.
-- Tambah buku lewat formulir (POST) dengan pola **Post-Redirect-Get (PRG)**.
-- Edit buku lewat rute dinamis `/buku/edit/:id` dengan formulir **pre-filled**.
-- Hapus buku dengan dialog konfirmasi di sisi klien.
-- Validasi dan sanitasi input di server (judul, penulis, kategori, stok, harga, tanggal).
-- Penanganan data tidak ditemukan dan `:id` tidak valid dengan halaman **404**.
-- Pesan status (created / updated / deleted) setelah redirect.
-- Endpoint uji keamanan SQL Injection (`/uji-keamanan`).
+## Skema Tabel
 
-## 2. Teknologi
-
-| Komponen | Keterangan |
-|---|---|
-| Runtime | Node.js |
-| Framework | Express |
-| View Engine | EJS |
-| Database | MySQL (`mysql2/promise`, `createPool`) |
-| Konfigurasi | `dotenv` |
-| Dev tool | `nodemon` |
-
-## 3. Arsitektur Proyek (MVC)
-
-```
-perpustakaan-mvc-mysql/
-├── config/
-│   └── database.js              # Connection pool (mysql2/promise)
-├── controllers/
-│   └── buku.controller.js       # Alur data + validasi, tanpa SQL
-├── models/
-│   └── buku.model.js            # SELURUH query SQL (prepared statements)
-├── routes/
-│   └── buku.routes.js
-├── views/
-│   ├── pages/                   # buku-list.ejs, buku-form.ejs, 404.ejs
-│   └── partials/                # header.ejs, footer.ejs
-├── public/css/style.css
-├── sql/schema.sql               # DDL + data awal
-├── docs/screenshots/            # bukti pengujian
-├── app.js
-├── .env                         # TIDAK diunggah ke GitHub
-├── .env.example                 # template konfigurasi
-└── package.json
-```
-
-Pemisahan layer:
-
-- **Model**: satu-satunya tempat query SQL.
-- **Controller**: menerima request, memvalidasi input, memanggil Model, lalu memilih view atau redirect.
-- **View (EJS)**: hanya menampilkan UI.
-
-## 4. Skema Database
-
-Database: `db_perpustakaan`, tabel: `buku`.
+Tabel `buku` memiliki sembilan kolom dengan beragam tipe data:
 
 | Kolom | Tipe | Keterangan |
 |---|---|---|
-| `id` | INT AUTO_INCREMENT PRIMARY KEY | Primary key |
-| `judul` | VARCHAR | Wajib, maks. 150 karakter |
-| `penulis` | VARCHAR | Wajib, maks. 100 karakter |
-| `sinopsis` | TEXT | Opsional (boleh NULL) |
-| `kategori` | ENUM | `Fiksi`, `Non-Fiksi`, `Sains & Teknologi`, `Sejarah`, `Referensi` |
-| `stok` | INT | Bilangan bulat >= 0 |
-| `harga` | DECIMAL | Angka >= 0 |
-| `tanggal_masuk` | DATE | Format `YYYY-MM-DD` |
-| `created_at` | TIMESTAMP | Default `CURRENT_TIMESTAMP` |
+| `id` | `INT AUTO_INCREMENT PRIMARY KEY` | Kunci utama |
+| `judul` | `VARCHAR(150)` | Judul buku |
+| `penulis` | `VARCHAR(100)` | Nama penulis |
+| `sinopsis` | `TEXT` | Ringkasan (opsional) |
+| `kategori` | `ENUM('Fiksi','Non-Fiksi','Sains & Teknologi','Sejarah','Referensi')` | Kategori buku |
+| `stok` | `INT` | Jumlah eksemplar |
+| `harga` | `DECIMAL(10,2)` | Harga buku |
+| `tanggal_masuk` | `DATE` | Tanggal buku masuk |
+| `created_at` | `TIMESTAMP` | Waktu pencatatan otomatis |
 
-Skrip lengkap (DDL dan data awal) ada di [`sql/schema.sql`](sql/schema.sql).
+## Cara Menjalankan
 
-## 5. Instalasi & Menjalankan
+1. **Pasang dependensi**
 
-```bash
-# 1. Clone repositori
-git clone <url-repo-anda>
-cd perpustakaan-mvc-mysql
+   ```bash
+   npm install
+   ```
 
-# 2. Pasang dependensi
-npm install
+2. **Siapkan database.** Jalankan isi `sql/schema.sql` di klien MySQL (phpMyAdmin, MySQL Workbench, atau DBeaver).
 
-# 3. Salin template environment lalu isi sesuai MySQL lokal
-cp .env.example .env
+3. **Siapkan variabel lingkungan.** Salin `.env.example` menjadi `.env`, lalu sesuaikan nilainya.
 
-# 4. Import skema database
-#    jalankan isi sql/schema.sql melalui phpMyAdmin / MySQL Workbench / CLI
+   ```bash
+   cp .env.example .env
+   ```
 
-# 5. Jalankan aplikasi
-npm run dev     # mode pengembangan (nodemon)
-npm start       # mode biasa
+   Isi `.env.example`:
+
+   ```
+   PORT=3000
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASS=
+   DB_NAME=db_perpustakaan
+   DB_PORT=3306
+   ```
+
+4. **Jalankan server**
+
+   ```bash
+   npm run dev
+   ```
+
+   Terminal menampilkan `[DATABASE] Terhubung ke MySQL Pool secara aman.` lalu `[SERVER] Aktif di http://localhost:3000`.
+
+5. Buka `http://localhost:3000/buku`.
+
+## Struktur Proyek
+
+```
+perpustakaan-mvc-mysql/
+├── app.js                          # Entry point: middleware, router, helper format, uji koneksi pool
+├── config/database.js              # Connection pool (mysql2) + interface Promise
+├── models/buku.model.js            # Seluruh query SQL (prepared statement)
+├── controllers/buku.controller.js  # Validasi input dan alur request/response
+├── routes/buku.routes.js           # Definisi endpoint (express.Router)
+├── views/
+│   ├── pages/                      # buku-list, buku-form (tambah dan edit), 404
+│   └── partials/                   # header.ejs, footer.ejs
+├── public/css/style.css            # Aset statis
+├── sql/schema.sql                  # Skema tabel dan data awal
+├── docs/screenshots/               # Bukti pengujian
+├── .env.example                    # Contoh variabel lingkungan (tanpa kredensial asli)
+└── package.json
 ```
 
-Aplikasi berjalan di `http://localhost:3000/buku`.
+## Endpoint
 
-### Konfigurasi `.env`
-
-Seluruh kredensial database disimpan di `.env` (tidak ikut ter-commit). Template ada di `.env.example`:
-
-```env
-PORT=3000
-DB_HOST=localhost
-DB_USER=root
-DB_PASS=
-DB_NAME=db_perpustakaan
-DB_PORT=3306
-```
-
-## 6. Daftar Endpoint
-
-| Operasi | Endpoint | Method | Parameter / Payload | Respon |
+| Operasi | Endpoint | HTTP Method | Parameter / Payload | Respons |
 |---|---|---|---|---|
-| Read (All) | `/buku` | GET | - | 200 OK (render tabel) |
-| Form Create | `/buku/tambah` | GET | - | 200 OK (render form) |
-| Create | `/buku/tambah` | POST | `req.body` | 302 → `/buku?status=created` |
-| Read (One) | `/buku/edit/:id` | GET | `req.params.id` | 200 OK (form terisi) / 404 |
-| Update | `/buku/edit/:id` | POST | `req.params.id` & `req.body` | 302 → `/buku?status=updated` |
-| Delete | `/buku/hapus/:id` | POST | `req.params.id` | 302 → `/buku?status=deleted` |
-| Uji Keamanan | `/uji-keamanan` | GET | query string | 200 OK (JSON) |
+| Read (All) | `/buku` | GET | - | 200 OK (tabel buku) |
+| Form tambah | `/buku/tambah` | GET | - | 200 OK |
+| Create | `/buku/tambah` | POST | `req.body` | 302 Found, redirect ke `/buku` |
+| Read (One) | `/buku/edit/:id` | GET | `req.params.id` | 200 OK (formulir terisi) |
+| Update | `/buku/edit/:id` | POST | `req.params.id` dan `req.body` | 302 Found, redirect ke `/buku` |
+| Delete | `/buku/hapus/:id` | POST | `req.params.id` | 302 Found, redirect ke `/buku` |
+| Uji keamanan | `/uji-keamanan` | GET | `?penulis=` | JSON hasil pencarian |
 
-## 7. Standar Keamanan Query
+## Keamanan Query
 
-Seluruh query (`SELECT ... WHERE`, `INSERT`, `UPDATE`, `DELETE`) memakai **prepared statements** melalui `db.execute()` dengan placeholder `?`. Tidak ada konkatenasi string maupun template literal untuk nilai input.
+Seluruh query memakai placeholder `?`, sehingga nilai input dipisahkan dari struktur SQL:
 
 ```js
-// models/buku.model.js
 const [rows] = await db.execute('SELECT * FROM buku WHERE id = ?', [id]);
 ```
 
-Lapisan pengamanan lain:
+Rute `/uji-keamanan` dipakai untuk pengujian: input `' OR '1'='1` dikirim lewat URL dan diperlakukan sebagai nilai teks biasa, sehingga tidak ada data yang bocor.
 
-- Kredensial database dibaca dari `process.env`, tidak ditulis di kode.
-- Parameter `:id` divalidasi hanya berisi angka sebelum menyentuh database.
-- Input formulir divalidasi dan dibersihkan (`trim`, whitelist kategori, cek tipe angka dan tanggal).
-- Sinopsis kosong dikirim sebagai `NULL` (bukan `undefined`) agar aman bagi prepared statement.
-
-## 8. Logbook Pengujian & Integritas Kode (Traceability Matrix)
+## Matriks Penelusuran Pengujian (Traceability Matrix)
 
 | ID Uji | Fitur / Operasi | Target Endpoint URL | HTTP Method | Skenario Pengujian | Hasil yang Diharapkan | Status | Bukti Tangkapan Layar |
 |---|---|---|---|---|---|---|---|
-| TC-01 | Koneksi Pool | App Startup | - | Server dijalankan pertama kali (`npm run dev`) | Terminal mencetak `[DATABASE] Terhubung ke MySQL Pool secara aman.` tanpa error | Pass | `docs/screenshots/01-db-pool-connection.png` |
-| TC-02 | Read (All) | `/buku` | GET | Akses halaman daftar buku | Seluruh record tabel `buku` tampil di antarmuka EJS, DevTools mencatat 200 OK | Pass | `docs/screenshots/02-read-select-render.png` |
-| TC-03 | Create | `/buku/tambah` | POST | Submit formulir buku baru | Data tersimpan di DB, DevTools mencatat 302 Found lalu 200 OK pada `/buku?status=created` | Pass | `docs/screenshots/03-create-insert-prg.png` |
-| TC-04 | Update | `/buku/edit/:id` | POST | Mengubah harga buku (form pre-filled) | Nilai kolom `harga` pada baris MySQL berubah sesuai input baru | Pass | `docs/screenshots/04-update-param-redirect.png` |
-| TC-05 | Delete | `/buku/hapus/:id` | POST | Eksekusi tombol hapus buku | Baris terhapus dari MySQL, UI ter-refresh (302 → `/buku?status=deleted`) | Pass | `docs/screenshots/05-delete-feedback.png` |
-| TC-06 | Keamanan | `/uji-keamanan` | GET | Input `Yuval Noah Harari' OR '1'='1` via URL | Prepared Statement memperlakukan input sebagai literal string (No Injection), `totalDataDitemukan: 0` | Pass | `docs/screenshots/06-sql-injection-mitigation.png` |
-
-### Pratinjau Bukti
-
-**TC-01 — Koneksi Pool**
-![TC-01](docs/screenshots/01-db-pool-connection.png)
-
-**TC-02 — Read (All)**
-![TC-02](docs/screenshots/02-read-select-render.png)
-
-**TC-03 — Create + PRG**
-![TC-03](docs/screenshots/03-create-insert-prg.png)
-
-**TC-04 — Update**
-![TC-04](docs/screenshots/04-update-param-redirect.png)
-
-**TC-05 — Delete**
-![TC-05](docs/screenshots/05-delete-feedback.png)
-
-**TC-06 — Mitigasi SQL Injection**
-![TC-06](docs/screenshots/06-sql-injection-mitigation.png)
-
-## 9. Pemetaan terhadap Rubrik Penilaian
-
-| Kriteria | Implementasi |
-|---|---|
-| Kepatuhan Prepared Statements & Keamanan | Semua query CRUD memakai `db.execute()` dengan `?`; kredensial di `.env` dan `.env.example` tersedia; validasi input ketat; uji SQL Injection terdokumentasi (TC-06) |
-| Fungsionalitas CRUD & Rute Dinamis | CRUD penuh; `req.params.id` dipakai untuk edit dan hapus; form edit pre-filled; pola PRG konsisten; 404 untuk data tidak ditemukan |
-| Arsitektur Model Layer & Connection Pooling | Query terisolasi di `models/`; `createPool` dengan interface Promise; `async/await` dengan `try-catch` |
-
-
+| TC-01 | Koneksi Pool | App Startup | - | Server dijalankan pertama kali | Terhubung ke MySQL Pool tanpa error | Pass | [docs/screenshots/01-db-pool-connection.png](docs/screenshots/01-db-pool-connection.png) |
+| TC-02 | Read (All) | `/buku` | GET | Akses halaman daftar buku | Menampilkan seluruh record tabel MySQL ke antarmuka EJS | Pass | [docs/screenshots/02-read-select-render.png](docs/screenshots/02-read-select-render.png) |
+| TC-03 | Create | `/buku/tambah` | POST | Submit formulir buku baru | Data tersimpan di DB, DevTools mencatat 302 Redirect ke `/buku` | Pass | [docs/screenshots/03-create-insert-prg.png](docs/screenshots/03-create-insert-prg.png) |
+| TC-04 | Update | `/buku/edit/:id` | POST | Mengubah harga dan stok buku | Nilai kolom pada baris MySQL berubah sesuai input baru | Pass | [docs/screenshots/04-update-param-redirect.png](docs/screenshots/04-update-param-redirect.png) |
+| TC-05 | Delete | `/buku/hapus/:id` | POST | Eksekusi tombol hapus buku | Baris record terhapus dari MySQL dan UI ter-refresh | Pass | [docs/screenshots/05-delete-feedback.png](docs/screenshots/05-delete-feedback.png) |
+| TC-06 | Keamanan | `/uji-keamanan` | GET | Input `' OR '1'='1` via URL | Prepared statement memperlakukan input sebagai literal string (tanpa injeksi) | Pass | [docs/screenshots/06-sql-injection-mitigation.png](docs/screenshots/06-sql-injection-mitigation.png) |
